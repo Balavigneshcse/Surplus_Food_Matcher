@@ -1,0 +1,43 @@
+# compose.prod.yaml (shadow run onward, on a small Linux VM): app + postgres:17 + Caddy for HTTPS.
+# Port 8000 is NOT published: only Caddy reaches the app, which makes --forwarded-allow-ips '*' safe.
+# Usage: docker compose -f compose.prod.yaml up -d --build   (needs a .env with DB_PASSWORD and APP_SECRET_KEY)
+name: annamsetu-prod
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: annamsetu
+      POSTGRES_USER: annamsetu
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U annamsetu -d annamsetu"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+  app:
+    build: .
+    environment:
+      APP_ENV: prod
+      APP_SECRET_KEY: "${APP_SECRET_KEY}"
+      APP_DATABASE_URL: "postgresql+psycopg://annamsetu:${DB_PASSWORD}@db:5432/annamsetu"
+      APP_PUBLIC_BASE_URL: "${APP_PUBLIC_BASE_URL}"
+      APP_SECURE_COOKIES: "true"
+      APP_DOCS: "false"
+      APP_DEMO: "false"
+    depends_on:
+      db: { condition: service_healthy }
+    restart: unless-stopped
+  caddy:
+    image: caddy:2
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [app]
+    restart: unless-stopped
+volumes:
+  pgdata: {}
+  caddy_data: {}
+  caddy_config: {}

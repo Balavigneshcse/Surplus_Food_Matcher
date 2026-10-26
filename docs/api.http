@@ -1,0 +1,53 @@
+### AnnamSetu API examples (VS Code "REST Client" or JetBrains HTTP client).
+### Start the app first:  .venv\Scripts\python -m uvicorn app.main:app --reload
+### The full, always-current list is at http://localhost:8000/docs (APP_DOCS=true).
+
+@base = http://localhost:8000
+
+### Liveness + database check (public)
+GET {{base}}/api/health
+
+### 1. Get a CSRF token (also sets the XSRF-TOKEN cookie). Copy csrfToken into @csrf below.
+GET {{base}}/api/auth/csrf
+
+@csrf = paste-the-token-here
+
+### 2. Log in (form fields). Use a demo user from README.md. Login issues a NEW token:
+###    copy the csrfToken from this response into @csrf again.
+POST {{base}}/api/auth/login
+Content-Type: application/x-www-form-urlencoded
+X-CSRF-Token: {{csrf}}
+
+username=kitchen&password=your-demo-password
+
+### 3. Who am I? (role, kitchen/NGO, sampleData, serverNow)
+GET {{base}}/api/me
+
+### 4. Demo clock (ADMIN, demo mode only): read
+GET {{base}}/api/admin/demo/clock
+
+### Demo clock: set a time (no offset = IST)
+POST {{base}}/api/admin/demo/clock
+Content-Type: application/json
+X-CSRF-Token: {{csrf}}
+
+{"at": "2026-10-30T11:55:00"}
+
+### Demo clock: jump forward 15 minutes
+POST {{base}}/api/admin/demo/clock
+Content-Type: application/json
+X-CSRF-Token: {{csrf}}
+
+{"plusMinutes": 15}
+
+### Demo clock: back to real time
+DELETE {{base}}/api/admin/demo/clock
+X-CSRF-Token: {{csrf}}
+
+### Demo reset: truncate transactional tables, reseed today, clock to 08:30
+POST {{base}}/api/admin/demo/reset
+X-CSRF-Token: {{csrf}}
+
+### 5. Log out (issues a new session; get a new CSRF token afterwards)
+POST {{base}}/api/auth/logout
+X-CSRF-Token: {{csrf}}

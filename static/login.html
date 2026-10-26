@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AnnamSetu login</title>
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <span class="brand" data-i18n="appName">AnnamSetu</span>
+    <div class="actions">
+      <button type="button" id="lang-toggle" class="link" data-i18n="language">தமிழ்</button>
+    </div>
+  </header>
+
+  <main class="container narrow">
+    <div class="card">
+      <h1 data-i18n="login">Log in</h1>
+      <p class="muted small" data-i18n="tagline">Cook right, keep the reserve safe, share the surplus.</p>
+      <form id="login-form" novalidate>
+        <div class="field">
+          <label for="username" data-i18n="username">Username</label>
+          <input id="username" name="username" autocomplete="username" autocapitalize="none" spellcheck="false"
+                 maxlength="50" required>
+        </div>
+        <div class="field">
+          <label for="password" data-i18n="password">Password</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" maxlength="64" required>
+        </div>
+        <p id="login-error" class="error-text" role="alert"></p>
+        <button type="submit" id="login-button" class="primary block" data-i18n="login">Log in</button>
+      </form>
+    </div>
+  </main>
+
+  <script type="module">
+    import { getMe, login } from '/js/api.js';
+    import { $ } from '/js/ui.js';
+    import { applyI18n, t, toggleLang } from '/js/i18n.js';
+
+    applyI18n();
+    $('#lang-toggle').addEventListener('click', toggleLang);
+
+    // Already logged in? Go straight to the home page.
+    getMe({ stay: true }).then(() => location.replace('/index.html')).catch(() => {});
+
+    $('#login-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const username = $('#username').value.trim();
+      const password = $('#password').value;
+      const error = $('#login-error');
+      error.textContent = '';
+      if (!username || !password) {
+        error.textContent = t('badCredentials');
+        return;
+      }
+      const button = $('#login-button');
+      button.disabled = true;
+      try {
+        await login(username, password);
+        location.replace('/index.html');
+      } catch (e) {
+        error.textContent = e.status === 401 ? t('badCredentials') : (e.message || 'Login failed');
+        $('#password').value = '';
+        $('#password').focus();
+      } finally {
+        button.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

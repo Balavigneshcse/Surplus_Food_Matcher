@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AnnamSetu</title>
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <span class="brand" data-i18n="appName">AnnamSetu</span>
+    <div class="actions">
+      <button type="button" id="lang-toggle" class="link" data-i18n="language">தமிழ்</button>
+      <button type="button" id="logout" class="hidden" data-i18n="logout">Log out</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <p id="status" class="muted" data-i18n="loading">Loading…</p>
+
+    <!-- Shown only while the role's home page is not built yet -->
+    <div id="welcome" class="card hidden">
+      <h1><span data-i18n="welcome">Welcome</span>, <span id="display-name"></span></h1>
+      <table>
+        <tr><th data-i18n="role">Role</th><td id="role"></td></tr>
+        <tr id="kitchen-row" class="hidden"><th data-i18n="kitchen">Kitchen</th><td id="kitchen"></td></tr>
+        <tr id="ngo-row" class="hidden"><th data-i18n="ngo">NGO</th><td id="ngo"></td></tr>
+        <tr><th data-i18n="serverTime">Server time (IST)</th><td id="server-time"></td></tr>
+      </table>
+      <p class="muted" data-i18n="comingSoon">Your home page arrives in the next build phase.</p>
+    </div>
+  </main>
+
+  <script type="module">
+    import { getMe, logout } from '/js/api.js';
+    import { $, fmtDateIST, fmtTimeIST } from '/js/ui.js';
+    import { applyI18n, toggleLang } from '/js/i18n.js';
+
+    // Each role's home page.
+    const HOME = {
+      ADMIN: '/admin/setup.html',
+      KITCHEN: '/kitchen/plan.html',
+      NGO: '/ngo/inbox.html',
+    };
+
+    applyI18n();
+    $('#lang-toggle').addEventListener('click', toggleLang);
+    $('#logout').addEventListener('click', logout);
+
+    async function pageExists(path) {
+      try {
+        const res = await fetch(path, { method: 'HEAD', credentials: 'same-origin' });
+        return res.ok;
+      } catch {
+        return false;
+      }
+    }
+
+    function showWelcome(me) {
+      $('#display-name').textContent = me.displayName;
+      $('#role').textContent = me.role;
+      if (me.kitchenName) {
+        $('#kitchen').textContent = `${me.kitchenName} (${me.kitchenCode})`;
+        $('#kitchen-row').classList.remove('hidden');
+      }
+      if (me.ngoName) {
+        $('#ngo').textContent = me.ngoName;
+        $('#ngo-row').classList.remove('hidden');
+      }
+      $('#server-time').textContent = `${fmtDateIST(me.serverNow)} ${fmtTimeIST(me.serverNow)}`;
+      $('#status').classList.add('hidden');
+      $('#welcome').classList.remove('hidden');
+      $('#logout').classList.remove('hidden');
+    }
+
+    try {
+      const me = await getMe(); // a 401 sends the user to login.html
+      const home = HOME[me.role];
+      if (home && await pageExists(home)) {
+        location.replace(home);
+      } else {
+        showWelcome(me);
+      }
+    } catch (e) {
+      if (e.status !== 401) $('#status').textContent = e.message;
+    }
+  </script>
+</body>
+</html>

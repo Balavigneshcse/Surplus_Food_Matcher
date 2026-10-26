@@ -1,0 +1,19 @@
+# compose.yaml (dev: only the database; the app runs on your laptop with --reload)
+name: annamsetu
+services:
+  db:
+    image: postgres:17
+    container_name: annamsetu-db
+    environment:
+      POSTGRES_DB: annamsetu
+      POSTGRES_USER: annamsetu
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+    ports: ["5433:5432"]              # host port 5433 (5432 is often taken on laptops)
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U annamsetu -d annamsetu"]
+      interval: 5s
+      retries: 10
+volumes:
+  pgdata:
+    name: annamsetu_pgdata

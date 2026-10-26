@@ -1,0 +1,44 @@
+/* Print view: cook card, label and batch record. Link with media="print". */
+
+@page { margin: 12mm; }
+
+body {
+  background: #fff !important;
+  color: #000 !important;
+  font-size: 12pt;
+}
+
+.topbar, .toast-area, .no-print, button, .btn { display: none !important; }
+
+/* The sample-data marker must stay visible on paper. */
+.sample-banner {
+  display: block !important;
+  background: #fff !important;
+  color: #000 !important;
+  border: 2px solid #000;
+  margin-bottom: 8px;
+}
+
+.container { max-width: none; padding: 0; }
+
+.card {
+  box-shadow: none;
+  border: 1px solid #000;
+  break-inside: avoid;
+  background: #fff;
+}
+
+.badge { color: #000 !important; border-color: #000 !important; }
+
+table { font-size: 11pt; }
+th, td { border-bottom: 1px solid #000; color: #000; }
+
+/* Cook card: large type that can be read from the stove. */
+.print-large { font-size: 18pt; line-height: 1.35; }
+.print-large strong { font-size: 22pt; }
+
+/* Label: fits a half A4 sheet. */
+.label { width: 100mm; border: 2px solid #000; padding: 4mm; break-inside: avoid; }
+.label img { width: 30mm; height: 30mm; }
+
+a { color: #000; text-decoration: none; }

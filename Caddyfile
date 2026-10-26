@@ -1,0 +1,4 @@
+# Replace with the real domain before deploying. Caddy gets the HTTPS certificate automatically.
+annamsetu.example.org {
+    reverse_proxy app:8000
+}
