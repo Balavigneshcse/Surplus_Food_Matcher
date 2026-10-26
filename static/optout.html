@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AnnamSetu opt-out</title>
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <span class="brand" data-i18n="appName">AnnamSetu</span>
+    <div class="actions">
+      <button type="button" id="lang-toggle" class="link" data-i18n="language">தமிழ்</button>
+    </div>
+  </header>
+
+  <main class="container narrow">
+    <div class="card">
+      <h1 data-i18n="optOutTitle">Skip a meal</h1>
+      <p id="kitchen-name" class="muted"></p>
+      <p class="small" data-i18n="optOutIntro">Not eating in the mess? Tell the kitchen before the cutoff, so less food is cooked and wasted.</p>
+      <div class="field">
+        <label for="hostel-id" data-i18n="hostelId">Hostel ID</label>
+        <input id="hostel-id" name="hostel-id" autocomplete="off" autocapitalize="characters" spellcheck="false"
+               maxlength="20" aria-describedby="hostel-hint">
+        <p id="hostel-hint" class="muted small" data-i18n="hostelIdHint">Letters, digits and '-' only, e.g. 22CS101</p>
+      </div>
+    </div>
+
+    <p id="load-error" class="error-text" role="alert"></p>
+
+    <section aria-labelledby="choose-title">
+      <h2 id="choose-title" data-i18n="chooseMeal">Tap the meal you will skip</h2>
+      <div id="meals" class="stack">
+        <p class="muted" data-i18n="loading">Loading…</p>
+      </div>
+    </section>
+
+    <!-- Confirm step: shown after a meal is tapped -->
+    <div id="confirm" class="card mt hidden" role="dialog" aria-modal="false" aria-labelledby="confirm-title">
+      <h2 id="confirm-title" data-i18n="confirmSkip">Skip this meal?</h2>
+      <p id="confirm-meal" class="small"></p>
+      <div class="actions-row">
+        <button type="button" id="confirm-yes" class="primary" data-i18n="yesSkip">Yes, skip it</button>
+        <button type="button" id="confirm-no" data-i18n="cancel">Cancel</button>
+      </div>
+    </div>
+
+    <p class="muted small" data-i18n="privacyNote">Only your hostel ID is stored, and it is deleted 30 days after the meal.</p>
+  </main>
+
+  <script type="module" src="/js/optout.js"></script>
+</body>
+</html>

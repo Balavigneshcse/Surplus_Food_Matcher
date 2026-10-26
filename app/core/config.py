@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     on_time_grace_min: int = 15
     no_show_grace_min: int = 30
     hostel_id_pattern: str = r"^[A-Za-z0-9-]{3,20}$"
+    # opt-out POSTs per client IP (in memory, one worker); a hostel Wi-Fi may share one IP, so be generous
+    optout_rate_limit: int = 30
+    optout_rate_window_s: int = 60
     optout_retention_days: int = 30
     demo_admin_password: str | None = None
     demo_kitchen_password: str | None = None

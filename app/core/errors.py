@@ -18,9 +18,10 @@ PROBLEM_JSON = "application/problem+json"
 class ApiError(Exception):
     """Raise this from services/routers to answer with a problem+json error."""
 
-    def __init__(self, status: int, code: str, detail: str):
+    def __init__(self, status: int, code: str, detail: str, headers: dict | None = None):
         super().__init__(detail)
         self.status, self.code, self.detail = status, code, detail
+        self.headers = headers  # e.g. {"Retry-After": "60"} on a 429
 
 
 # Database constraint name -> (code, message). Unknown names fall back to CONSTRAINT_VIOLATED.
@@ -78,7 +79,7 @@ def _safe_errors(exc: RequestValidationError) -> list:
 def install_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(ApiError)
     async def on_api_error(request: Request, exc: ApiError):
-        return problem(request, exc.status, exc.code, exc.detail)
+        return problem(request, exc.status, exc.code, exc.detail, headers=exc.headers)
 
     @app.exception_handler(RequestValidationError)  # FastAPI's default is 422; we use 400
     async def on_invalid(request: Request, exc: RequestValidationError):

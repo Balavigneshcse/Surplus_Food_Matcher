@@ -55,3 +55,32 @@ def clean_db(engine):
 def db():
     with SessionLocal() as session:
         yield session
+
+
+@pytest.fixture(autouse=True)
+def fresh_rate_limiter():
+    """The opt-out rate limiter lives in memory; every test starts with no recorded requests."""
+    from app.services.opt_outs import rate_limiter
+    rate_limiter.clear()
+    yield
+    rate_limiter.clear()
+
+
+@pytest.fixture
+def clock():
+    """The app clock, fixed at 08:30 IST on 30 Oct 2026 (tests move it with clock.at = ...)."""
+    from app.core.clock import get_clock, use_clock
+    from tests.integration.factories import FixedClock, at
+    previous = get_clock()
+    fixed = FixedClock(at(8, 30))
+    use_clock(fixed)
+    yield fixed
+    use_clock(previous)
+
+
+@pytest.fixture
+def client():
+    """The real app (all routers, error handlers, session middleware) talking to the test database."""
+    from fastapi.testclient import TestClient
+    from app import main
+    return TestClient(main.app)

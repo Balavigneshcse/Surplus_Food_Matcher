@@ -3,8 +3,11 @@
 - Idempotent: rows are looked up by natural key and created only when missing; ids are never set.
 - Always uses today's IST date from the clock.
 - Passwords come from APP_DEMO_*_PASSWORD and are hashed at runtime with pwdlib.
-- reset_demo() empties the transactional tables with TRUNCATE (the probe log trigger blocks DELETE),
-  re-seeds, and sets the demo clock to 08:30 today, before the 09:00 opt-out cutoff of lunch.
+- reset_demo() sets the demo clock to 08:30 today (before the 09:00 opt-out cutoff of lunch), empties the
+  transactional tables with TRUNCATE (the probe log trigger blocks DELETE) and re-seeds.
+- Demo numbers (plan 11.6): today's lunch has 1000 registered and 44 sample opt-outs -> P50 813 / P90 862
+  (rice 70.7 kg raw, serving line 162.6 kg, reserve vessel 9.8 kg). The student's opt-out on stage makes
+  45 -> P50 812 / P90 861 (rice 70.6 kg raw, serving line 162.4 kg, reserve 9.8 kg; sambhar 121.8 kg + 7.4 kg).
 """
 import logging
 from datetime import date, datetime, time, timedelta
@@ -73,12 +76,14 @@ def seed_demo(db: Session, clock: Clock) -> None:
 
 
 def reset_demo(db: Session, clock: DemoClock) -> None:
-    clock.reset()
+    clock.reset()  # back to real time first, to find today's IST date
+    # 08:30 BEFORE re-seeding: the scheduler tick runs in another thread, and at the real time (after the
+    # 09:00 cutoff) it would issue the fresh lunch at once.
+    clock.set(datetime.combine(clock.today(), time(8, 30), IST))
     db.execute(text(f"TRUNCATE {TRANSACTIONAL_TABLES} RESTART IDENTITY CASCADE"))
     db.execute(update(Ngo).values(pickups_total=0, pickups_on_time=0))  # fresh on-time scores
     db.commit()
     seed_demo(db, clock)
-    clock.set(datetime.combine(clock.today(), time(8, 30), IST))
 
 
 # ---------------------------------------------------------------- organisations and users

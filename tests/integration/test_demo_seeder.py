@@ -126,3 +126,56 @@ def test_reset_truncates_and_reseeds_and_sets_the_clock(db):
     now = clock.now().astimezone(IST)
     assert now.strftime("%H:%M") == "08:30"
     assert now.date() == datetime.now(IST).date()
+
+
+def test_seeded_lunch_reproduces_the_demo_numbers(db):
+    """Plan 11.6: 08:30, 1000 registered, 44 out -> P50 813 / P90 862; the student's opt-out on stage makes 45 ->
+    P50 812 / P90 861: rice 70.6 kg raw, serving line 162.4 kg, RESERVE VESSEL 9.8 kg; sambhar 121.8 + 7.4 kg."""
+    from app.core.security import CurrentUser
+    from app.schemas.planning import OptOutIn
+    from app.services import meals, opt_outs
+
+    clock = DemoClock()
+    clock.set(datetime(2026, 10, 30, 8, 30))
+    seed_demo(db, clock)
+    cook = db.scalar(select(AppUser).where(AppUser.username == "kitchen"))
+    user = CurrentUser(id=cook.id, role=cook.role, kitchen_id=cook.kitchen_id, ngo_id=None)
+    lunch_id = db.scalar(select(Meal.id).join(MealSlot).where(MealSlot.slot == "LUNCH"))
+
+    def numbers():
+        view = meals.meal_view(db, user, lunch_id, clock.now())
+        lines = {line.name: line for line in view.cook_card}
+        rice, sambhar = lines["Rice"], lines["Sambhar"]
+        return (view.registered_count, view.opted_out, view.forecast.p50, view.forecast.p90,
+                rice.raw_g, rice.line_g, rice.reserve_g, sambhar.line_g, sambhar.top_up_g, view.optout_open)
+
+    assert numbers() == (1000, 44, 813, 862, 70684, 162600, 9800, 121950, 7350, True)
+    opt_outs.opt_out(db, OptOutIn(kitchen_code="MESS1", date=date(2026, 10, 30), slot="LUNCH",
+                                  hostel_id="DEMO-STUDENT"), "127.0.0.1", clock.now())
+    assert numbers() == (1000, 45, 812, 861, 70602, 162400, 9800, 121800, 7350, True)
+    seed_demo(db, clock)  # idempotent: seeding again neither adds nor removes opt-outs
+    assert numbers()[1:4] == (45, 812, 861)
+
+
+def test_reset_sets_the_clock_before_reseeding(db):
+    """A scheduler tick running during the reset must see 08:30, not the real time (after the 09:00 cutoff)."""
+    seen = []
+    clock = DemoClock()
+    clock.set(datetime(2026, 10, 30, 13, 0))
+    seed_demo(db, clock)
+
+    import app.demo.seeder as seeder
+    real_seed = seeder.seed_demo
+
+    def spy(db_, clock_):
+        seen.append(clock_.now().astimezone(IST).strftime("%H:%M"))
+        real_seed(db_, clock_)
+
+    seeder.seed_demo = spy
+    try:
+        reset_demo(db, clock)
+    finally:
+        seeder.seed_demo = real_seed
+    assert seen == ["08:30"]
+    lunch = db.scalar(select(Meal).join(MealSlot).where(MealSlot.slot == "LUNCH"))
+    assert lunch.status == "PLANNED"

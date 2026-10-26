@@ -16,6 +16,7 @@
   --green: #1e7d32;
   --amber: #b26a00;
   --red: #b3261e;
+  --on-status: #ffffff; /* text on green/red toasts */
   --focus: #2b6cb0;
   --radius: 10px;
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
@@ -40,6 +41,7 @@
     --green: #6fcf7f;
     --amber: #ffb74d;
     --red: #ff8a80;
+    --on-status: #0d1a14;
     --focus: #90cdf4;
     --shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
     color-scheme: dark;
@@ -62,6 +64,7 @@
   --green: #6fcf7f;
   --amber: #ffb74d;
   --red: #ff8a80;
+  --on-status: #0d1a14;
   --focus: #90cdf4;
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
   color-scheme: dark;
@@ -116,6 +119,7 @@ h2 { font-size: 1.15rem; margin: 0 0 8px; }
 }
 
 .stack > * + * { margin-top: 12px; }
+.mt { margin-top: 16px; }
 .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 
 /* ---- forms ---- */
@@ -211,10 +215,85 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   color: var(--bg);
   box-shadow: var(--shadow);
 }
-.toast.error { background: var(--danger); color: #fff; }
-.toast.success { background: var(--green); color: #fff; }
+.toast.error { background: var(--danger); color: var(--on-status); }
+.toast.success { background: var(--green); color: var(--on-status); }
 
 .countdown { font-variant-numeric: tabular-nums; font-weight: 700; }
+
+/* ---- staff navigation and tabs ---- */
+.topbar { flex-wrap: wrap; }
+.nav { display: flex; gap: 4px; flex-wrap: wrap; }
+.nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.nav a[aria-current="page"] { background: var(--surface-2); color: var(--text); }
+
+.tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+.tabs button { flex: 1; }
+.tabs button[aria-selected="true"] { background: var(--primary); border-color: var(--primary); color: var(--primary-text); }
+
+/* ---- meal cards: big P50 / P90 numbers, small facts ---- */
+.card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.card-head h2 { margin: 0; }
+.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 8px 0; }
+.stat { background: var(--surface-2); border-radius: 8px; padding: 8px 12px; }
+.stat .value { display: block; font-size: 2rem; font-weight: 800; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.stat .label { display: block; font-size: 0.85rem; color: var(--muted); }
+.facts { display: flex; flex-wrap: wrap; gap: 2px 16px; font-size: 0.9rem; color: var(--muted); margin: 8px 0; }
+.facts strong { color: var(--text); font-variant-numeric: tabular-nums; }
+.badge.planned { color: var(--focus); }
+.badge.issued { color: var(--green); }
+.badge.in_service { color: var(--amber); }
+.badge.closed { color: var(--muted); }
+.actions-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.actions-row > * { flex: 1 1 140px; }
+.sub-form { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px; }
+
+/* two fields side by side once there is room */
+.grid2 { display: grid; grid-template-columns: 1fr; gap: 0 12px; }
+@media (min-width: 520px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+
+/* checkboxes and radios are not stretched like text inputs */
+input[type="checkbox"], input[type="radio"] { width: 24px; height: 24px; min-height: 24px; padding: 0; margin: 0; accent-color: var(--primary); }
+.check { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; font-weight: 600; margin: 0; cursor: pointer; }
+
+/* menu picker: one row per dish */
+.pick-row { padding: 8px 0; border-bottom: 1px solid var(--border); }
+.pick-row .opts { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: center; }
+.pick-row .usual { max-width: 140px; }
+.pick-row .usual input { min-height: 44px; }
+
+/* the cook card in short, on the plan page */
+.dish-list { list-style: none; padding: 0; margin: 8px 0; }
+.dish-list li { padding: 8px 0; border-top: 1px solid var(--border); }
+.dish-list .badge { margin-left: 8px; }
+.dish-list .facts { margin: 4px 0 0; }
+
+/* the Indian veg / non-veg mark (with a text label next to it) */
+.veg-mark { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--green); position: relative; vertical-align: -1px; }
+.veg-mark::after { content: ""; position: absolute; inset: 2px; border-radius: 50%; background: var(--green); }
+.veg-mark.nonveg { border-color: var(--red); }
+.veg-mark.nonveg::after { background: var(--red); }
+
+/* big choice buttons (student opt-out page) */
+.choice { width: 100%; min-height: 72px; justify-content: space-between; text-align: left; font-size: 1.1rem; }
+.choice .when { font-weight: 400; font-size: 0.9rem; color: var(--muted); }
+.choice.done { border-color: var(--green); }
+
+/* cook card (screen; print.css makes it large on paper) */
+.cook-dish { border-top: 2px solid var(--border); padding: 12px 0; }
+.cook-dish h2 .ta { display: block; font-size: 0.95em; font-weight: 600; }
+.amount { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 4px 0; }
+.amount strong { font-size: 1.5rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.amount .ta { display: block; font-size: 0.85em; color: var(--muted); }
+.reserve-box { border: 3px solid var(--text); border-radius: 8px; padding: 8px 12px; margin-top: 8px; }
+.draft { border: 2px dashed var(--amber); color: var(--amber); border-radius: 8px; padding: 8px 12px; font-weight: 700; }
 
 .hidden { display: none !important; }
 

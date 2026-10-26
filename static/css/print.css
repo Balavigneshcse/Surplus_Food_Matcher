@@ -36,6 +36,15 @@ th, td { border-bottom: 1px solid #000; color: #000; }
 /* Cook card: large type that can be read from the stove. */
 .print-large { font-size: 18pt; line-height: 1.35; }
 .print-large strong { font-size: 22pt; }
+.print-large h1 { font-size: 24pt; }
+.print-large h2 { font-size: 20pt; }
+.cook-dish { break-inside: avoid; border-top: 2px solid #000; }
+.amount .ta, .muted { color: #000 !important; }
+.reserve-box { border: 4px solid #000; }
+.draft { border: 3px dashed #000; color: #000; }
+.veg-mark { border-color: #000 !important; }
+.veg-mark::after { background: #000 !important; }
+.veg-mark.nonveg::after { border-radius: 0; }
 
 /* Label: fits a half A4 sheet. */
 .label { width: 100mm; border: 2px solid #000; padding: 4mm; break-inside: avoid; }

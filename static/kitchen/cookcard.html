@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AnnamSetu cook card</title>
+  <link rel="stylesheet" href="/css/app.css">
+  <link rel="stylesheet" href="/css/print.css" media="print">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/index.html" data-i18n="appName">AnnamSetu</a>
+    <nav class="nav" aria-label="Kitchen pages">
+      <a href="/kitchen/plan.html" data-i18n="plan">Meal plan</a>
+      <a href="/kitchen/setup.html" data-i18n="setup">Setup</a>
+    </nav>
+    <div class="actions">
+      <button type="button" id="logout" class="link" data-i18n="logout">Log out</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="actions-row no-print">
+      <button type="button" id="print" class="primary" data-i18n="print">Print</button>
+      <a class="btn" href="/kitchen/plan.html" data-i18n="back">Back to plan</a>
+    </div>
+    <p id="status" class="muted" data-i18n="loading">Loading…</p>
+    <!-- English and Tamil are printed together, in large type -->
+    <article id="card" class="card print-large hidden"></article>
+  </main>
+
+  <script type="module" src="/js/cookcard.js"></script>
+</body>
+</html>

@@ -64,8 +64,45 @@ def test_no_scheduler_when_disabled(monkeypatch):
     assert FakeScheduler.created == []
 
 
-def test_loop_tick_runs_with_no_steps():
-    scheduler.loop_tick()  # STEPS is empty until later phases; must not fail
+class FakeSession:
+    """Stands in for SessionLocal(): counts the sessions the tick opens."""
+    opened = 0
+
+    def __enter__(self):
+        FakeSession.opened += 1
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+
+def test_steps_1_and_2_are_wired_in_the_plan_order():
+    assert [name for name, _find, _handle in scheduler.STEPS] == ["issue-at-cutoff", "start-service"]
+    from app.services import meals
+    assert scheduler.STEPS[0][1:] == (meals.find_past_cutoff, meals.auto_issue)
+    assert scheduler.STEPS[1][1:] == (meals.find_past_start, meals.start_service)
+
+
+def test_loop_tick_gives_each_item_its_own_session_and_survives_failures(monkeypatch):
+    calls = []
+
+    def find_two(db, now):
+        return [1, 2]
+
+    def handle(db, item_id, now):
+        calls.append(item_id)
+        if item_id == 1:
+            raise RuntimeError("one bad row")
+
+    def find_broken(db, now):
+        raise RuntimeError("database down")
+
+    monkeypatch.setattr(scheduler, "SessionLocal", FakeSession)
+    monkeypatch.setattr(scheduler, "STEPS", [("broken", find_broken, handle), ("two", find_two, handle)])
+    FakeSession.opened = 0
+    scheduler.loop_tick(now=None)
+    assert calls == [1, 2]  # the failing item and the failing step did not stop the rest
+    assert FakeSession.opened == 4  # broken find + one find + one session per item
 
 
 def test_root_serves_index_page():

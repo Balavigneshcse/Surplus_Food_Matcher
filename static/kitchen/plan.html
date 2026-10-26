@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AnnamSetu meal plan</title>
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/index.html" data-i18n="appName">AnnamSetu</a>
+    <nav class="nav" aria-label="Kitchen pages">
+      <a href="/kitchen/plan.html" aria-current="page" data-i18n="plan">Meal plan</a>
+      <a href="/kitchen/setup.html" data-i18n="setup">Setup</a>
+    </nav>
+    <div class="actions">
+      <button type="button" id="lang-toggle" class="link" data-i18n="language">தமிழ்</button>
+      <button type="button" id="logout" class="link" data-i18n="logout">Log out</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="card-head">
+      <h1 id="kitchen-title" data-i18n="plan">Meal plan</h1>
+      <span class="muted small"><span data-i18n="serverClock">Server time</span>: <strong id="server-time">-</strong></span>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="Day">
+      <button type="button" role="tab" id="tab-today" data-day="today" aria-selected="true">Today</button>
+      <button type="button" role="tab" id="tab-tomorrow" data-day="tomorrow" aria-selected="false">Tomorrow</button>
+    </div>
+
+    <p id="status" class="muted" data-i18n="loading">Loading…</p>
+    <div id="meals"></div>
+  </main>
+
+  <script type="module" src="/js/plan.js"></script>
+</body>
+</html>

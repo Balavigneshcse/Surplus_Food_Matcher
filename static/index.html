@@ -36,10 +36,11 @@
     import { $, fmtDateIST, fmtTimeIST } from '/js/ui.js';
     import { applyI18n, toggleLang } from '/js/i18n.js';
 
-    // Each role's home page.
+    // Each role's home page. KITCHEN's exists since Phase 2; the ADMIN and NGO pages arrive in their phases,
+    // so for them we check first and show the welcome card until the page exists.
+    const KITCHEN_HOME = '/kitchen/plan.html';
     const HOME = {
       ADMIN: '/admin/setup.html',
-      KITCHEN: '/kitchen/plan.html',
       NGO: '/ngo/inbox.html',
     };
 
@@ -76,7 +77,9 @@
     try {
       const me = await getMe(); // a 401 sends the user to login.html
       const home = HOME[me.role];
-      if (home && await pageExists(home)) {
+      if (me.role === 'KITCHEN') {
+        location.replace(KITCHEN_HOME);
+      } else if (home && await pageExists(home)) {
         location.replace(home);
       } else {
         showWelcome(me);

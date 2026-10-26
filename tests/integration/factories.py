@@ -5,9 +5,10 @@ from types import SimpleNamespace
 
 from sqlalchemy.orm import Session
 
-from app.core.clock import IST
+from app.core.clock import IST, Clock
 from app.core.security import password_hash
-from app.models import AppUser, Dish, Kitchen, Meal, MealDish, MealSlot, Ngo, Offer, ReserveBatch
+from app.models import (AppUser, Dish, Kitchen, Meal, MealDish, MealSlot, Ngo, Offer, OptOut, Partnership,
+                        ReserveBatch)
 
 DAY = date(2026, 10, 30)
 
@@ -78,3 +79,55 @@ def make_offer(db: Session, batch: ReserveBatch, ngo: Ngo, seq: int, status: str
                   sent_at=sent, expires_at=sent + timedelta(minutes=10))
     db.add(offer)
     return offer
+
+
+# ---------------------------------------------------------------- planning (Phase 2)
+
+class FixedClock(Clock):
+    """A clock that says what the test tells it to (tests move it by changing `.at`)."""
+
+    def __init__(self, now: datetime) -> None:
+        self.at = now
+
+    def now(self) -> datetime:
+        return self.at
+
+
+def make_planning(db: Session, code: str = "TEST1", username: str = "cook") -> SimpleNamespace:
+    """A kitchen (1000 registered) with a cook, a partner NGO with an MoU, LUNCH 12:00-14:00 (cutoff 180 min,
+    ratio 0.85, buffer 6 %) and DINNER 19:30-21:30, and dishes Rice (200 g / 82 g raw), Sambhar 150 g,
+    Poriyal 80 g and a non-veg Chicken curry. No meals yet."""
+    kitchen = make_kitchen(db, code)
+    cook = make_user(db, username, "KITCHEN", kitchen_id=kitchen.id)
+    partner = make_ngo(db, f"Partner of {code}")
+    db.add(Partnership(kitchen_id=kitchen.id, ngo_id=partner.id, mou_ref=f"MOU-{code}"))
+    lunch = MealSlot(kitchen_id=kitchen.id, slot="LUNCH", service_start=time(12, 0), service_end=time(14, 0),
+                     optout_cutoff_min=180, attendance_ratio=Decimal("0.850"), buffer_pct=Decimal("6.0"),
+                     standing_ngo_id=partner.id)
+    dinner = MealSlot(kitchen_id=kitchen.id, slot="DINNER", service_start=time(19, 30), service_end=time(21, 30),
+                      optout_cutoff_min=180, attendance_ratio=Decimal("0.500"), buffer_pct=Decimal("6.0"),
+                      rescue_enabled=False)
+    rice = Dish(kitchen_id=kitchen.id, name="Rice", name_ta="சாதம்", cooked_g_per_diner=200, raw_g_per_diner=82)
+    sambhar = Dish(kitchen_id=kitchen.id, name="Sambhar", cooked_g_per_diner=150)
+    poriyal = Dish(kitchen_id=kitchen.id, name="Poriyal", cooked_g_per_diner=80)
+    chicken = Dish(kitchen_id=kitchen.id, name="Chicken curry", is_veg=False, cooked_g_per_diner=120)
+    db.add_all([lunch, dinner, rice, sambhar, poriyal, chicken])
+    db.commit()
+    return SimpleNamespace(kitchen=kitchen, cook=cook, partner=partner, lunch=lunch, dinner=dinner, rice=rice,
+                           sambhar=sambhar, poriyal=poriyal, chicken=chicken)
+
+
+def add_opt_outs(db: Session, kitchen: Kitchen, n: int, day: date = DAY, slot: str = "LUNCH",
+                 prefix: str = "H") -> None:
+    for i in range(1, n + 1):
+        db.add(OptOut(kitchen_id=kitchen.id, slot=slot, meal_date=day, hostel_id=f"{prefix}-{i:03d}"))
+    db.commit()
+
+
+def log_in(client, username: str, password: str = "test-password") -> str:
+    """Log a TestClient in and return the new CSRF token (send it as X-CSRF-Token)."""
+    token = client.get("/api/auth/csrf").json()["csrfToken"]
+    res = client.post("/api/auth/login", data={"username": username, "password": password},
+                      headers={"X-CSRF-Token": token})
+    assert res.status_code == 200, res.text
+    return res.json()["csrfToken"]

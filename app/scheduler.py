@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from app.core.clock import get_clock
 from app.core.config import get_settings
 from app.core.db import SessionLocal
-from app.services import opt_outs
+from app.services import meals, opt_outs
 
 log = logging.getLogger(__name__)
 
@@ -20,17 +20,23 @@ FindDue = Callable[[Session, datetime], list[int]]
 Handle = Callable[[Session, int, datetime], None]
 
 # (name, find_due(db, now) -> list of ids, handle(db, id, now)); always run in this order.
-# Later phases add the steps from plan 8.6: issue-at-cutoff, start-service, t90, expire-offers,
-# safeclock, no-show, unclaimed.
-STEPS: list[tuple[str, FindDue, Handle]] = []
+# Later phases add the steps from plan 8.6: t90, expire-offers, safeclock, no-show, unclaimed.
+STEPS: list[tuple[str, FindDue, Handle]] = [
+    ("issue-at-cutoff", meals.find_past_cutoff, meals.auto_issue),  # 1: PLANNED past the cutoff -> ISSUED
+    ("start-service", meals.find_past_start, meals.start_service),  # 2: ISSUED past service start -> IN_SERVICE
+]
 
 
 def loop_tick(now: datetime | None = None) -> None:
     """Run every step. Each item gets its own session + transaction, so one bad row never stops the tick."""
     now = now or get_clock().now()
     for name, find_due, handle in STEPS:
-        with SessionLocal() as db:
-            ids = find_due(db, now)  # short read
+        try:
+            with SessionLocal() as db:
+                ids = find_due(db, now)  # short read
+        except Exception:
+            log.exception("tick step %s could not find its items", name)
+            continue
         for item_id in ids:
             try:
                 with SessionLocal() as db:

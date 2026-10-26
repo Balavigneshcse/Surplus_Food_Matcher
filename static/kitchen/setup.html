@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AnnamSetu kitchen setup</title>
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/index.html" data-i18n="appName">AnnamSetu</a>
+    <nav class="nav" aria-label="Kitchen pages">
+      <a href="/kitchen/plan.html" data-i18n="plan">Meal plan</a>
+      <a href="/kitchen/setup.html" aria-current="page" data-i18n="setup">Setup</a>
+    </nav>
+    <div class="actions">
+      <button type="button" id="lang-toggle" class="link" data-i18n="language">தமிழ்</button>
+      <button type="button" id="logout" class="link" data-i18n="logout">Log out</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <h1 id="kitchen-title" data-i18n="setup">Setup</h1>
+    <p id="kitchen-info" class="muted small"></p>
+
+    <div class="tabs" role="tablist" aria-label="Setup">
+      <button type="button" role="tab" id="tab-slots" data-tab="slots" aria-selected="true" aria-controls="panel-slots" data-i18n="mealSlots">Meal slots</button>
+      <button type="button" role="tab" id="tab-dishes" data-tab="dishes" aria-selected="false" aria-controls="panel-dishes" data-i18n="dishes">Dishes</button>
+    </div>
+
+    <p id="status" class="muted" data-i18n="loading">Loading…</p>
+    <section id="panel-slots" role="tabpanel" aria-labelledby="tab-slots"></section>
+    <section id="panel-dishes" role="tabpanel" aria-labelledby="tab-dishes" class="hidden"></section>
+  </main>
+
+  <script type="module" src="/js/setup.js"></script>
+</body>
+</html>

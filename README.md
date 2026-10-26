@@ -18,15 +18,25 @@ All kitchens, NGOs, people and numbers in the demo data are **fictional sample d
 | Phase | Scope | Status |
 |---|---|---|
 | 1 Setup & foundation | Project skeleton, settings, DB + 14 tables (Alembic 0001-0006), login/roles/CSRF, problem+json errors, demo clock + seeder + reset, shared JS/CSS, login and index pages, access-rule / migration / model-drift / constraint tests | **done** |
-| 2 PREDICT + PREVENT | Rule forecast, cook card, slots/dishes setup, meals API, opt-out page, plan + cook card pages | next |
-| 3 PROVE (SafeClock) | Lid + probe log, SafeClock rule, reserve panel | |
+| 2 PREDICT + PREVENT | Rule forecast (`RULE_V1` behind the `Forecaster` port), cook card + reserve vessel, slots/dishes setup, meals API (create/edit/override/issue/live count), scheduler steps 1-2 (issue at cutoff, start service), public opt-out API, `optout.html`, `kitchen/plan.html`, `kitchen/cookcard.html`, `kitchen/setup.html` | **done** |
+| 3 PROVE (SafeClock) | Lid + probe log, SafeClock rule, reserve panel | next |
 | 4 PRE-BOOK | T-90 rule, offers (partner + overflow), NGO inbox, scheduler steps | |
 | 5 Handover + record | Handover, Schedule II record, label, QR, public record page, NGO fields 10-12 | |
 | 6 ROUTE + dashboard + admin | Route log page, close meal, dashboard, admin setup page, CSV export | |
 
-In Phase 1 every router already exists with its prefix and role/CSRF rule, but the feature endpoints
-arrive with their phase. After logging in, `index.html` shows a welcome card until the role's home page
-(`kitchen/plan.html`, `ngo/inbox.html`, `admin/setup.html`) exists.
+Every router already exists with its prefix and role/CSRF rule; the feature endpoints arrive with their
+phase. After logging in, a KITCHEN user lands on `kitchen/plan.html`; ADMIN and NGO users see a welcome
+card until their home page (`admin/setup.html`, `ngo/inbox.html`) exists.
+
+### Pages so far
+
+| Page | Who | What |
+|---|---|---|
+| `login.html`, `index.html` | everyone | log in; `index.html` sends each role to its home page |
+| `optout.html?k=MESS1` | students (no login) | hostel ID, the meals still open (today, tomorrow) as big buttons, confirm, Undo until the cutoff |
+| `kitchen/plan.html` | KITCHEN | today/tomorrow meals per slot: plan or edit a meal (menu with exactly one veg reserve dish, usual kg), live P50/P90 (refreshes every 15 s), override with a reason, **Issue cook card**, door tally +1/+10/set |
+| `kitchen/cookcard.html?meal=ID` | KITCHEN | print view in English + Tamil: raw kg, serving-line kg, top-up line, **RESERVE VESSEL** kg, usual vs planned; DRAFT until issued |
+| `kitchen/setup.html` | KITCHEN | tabs: meal slots (times, cutoff, ratio, buffer, share at T-90, partner, pickup offset, rescue) and dishes |
 
 ## One-time setup (Windows 11)
 
@@ -118,6 +128,13 @@ Sample data: kitchen MESS1 "Sample Hostel Mess" (1,000 registered), LUNCH 12:00-
 four fictional verified NGOs with MoUs ("Sample NGO A-D"; D has no reheating and fails the offer
 filters), today's lunch with 44 opt-outs, and yesterday's dinner reserve batch that is RED.
 
+Demo numbers (plan 11.6): after a demo reset (clock 08:30) today's lunch shows **P50 813 / P90 862**
+(rice 70.7 kg raw, serving line 162.6 kg, reserve vessel 9.8 kg). One student opt-out on
+`optout.html?k=MESS1` makes 45 -> **P50 812 / P90 861**: rice 70.6 kg raw, serving line 162.4 kg,
+RESERVE VESSEL 9.8 kg; sambhar 121.8 kg + a 7.4 kg top-up. Opt-outs close at 09:00, or as soon as the
+cook card is issued (an opt-out saved at that very moment is still counted). The scheduler issues PLANNED meals at their cutoff and starts service at the start
+time, so after a plain restart (real time past 09:00) the lunch is already issued: run the demo reset.
+
 On the demo laptop set `APP_PUBLIC_BASE_URL=http://192.168.137.1:8000` (Windows Mobile Hotspot) so the
 phones can open QR links; see `docs/demo-script.md`.
 
@@ -125,15 +142,15 @@ phones can open QR links; see `docs/demo-script.md`.
 
 | Folder | What | Needs |
 |---|---|---|
-| `tests/unit/` | clock, demo clock, settings, schema helpers (later: the pure rules) | nothing |
-| `tests/api/` | role rules per router prefix (401/403), every real `/api` route carries its prefix rule + CSRF, CSRF on POST/PUT/DELETE (login and logout too), session cookie settings, dummy-hash check for unknown/disabled users, bcrypt's 72-byte rule, problem+json shape, unknown `/api` path 404 for every method, static files, health, error handlers, lifespan + scheduler jobs, demo clock API | nothing |
-| `tests/integration/` | migrations (one head, downgrade/upgrade, models = migrations incl. CHECK and partial-index text, ids `generated always`, every timestamp a timestamptz), DB constraints and the append-only trigger, UTC sessions + optimistic lock, login against the DB (real session cookie: flags, holds only ids, forged cookie ignored), demo seeder (IST date after midnight, sample labels)/reset/demo API, opt-out purge | Docker (Testcontainers `postgres:17`) or `TEST_DATABASE_URL` |
+| `tests/unit/` | clock, demo clock, settings, schema helpers; the rule forecast (812/861 and 813/862, ROUND_HALF_UP edges, eligible floor at 0, P90 capped at eligible, MANUAL), the cook card (rice/sambhar example, P50_TOPUP vs P90 basis, no raw g, one veg reserve dish, frozen basis read-back), the opt-out rate limiter and hostel ID format | nothing |
+| `tests/api/` | role rules per router prefix (401/403), every real `/api` route carries its prefix rule + CSRF, CSRF on POST/PUT/DELETE (login and logout too), session cookie settings, dummy-hash check for unknown/disabled users, bcrypt's 72-byte rule, problem+json shape, unknown `/api` path 404 for every method, static files, health, error handlers, lifespan + scheduler jobs (steps 1-2 wired in order, one session per item, a failing item or step never stops the tick), demo clock API; the Phase 2 pages are served and every API call in their scripts exists in OpenAPI with that method; every element id a page script looks up exists in its page; the public opt-out answer carries no earlier state; every English label has a Tamil one | nothing |
+| `tests/integration/` | migrations (one head, downgrade/upgrade, models = migrations incl. CHECK and partial-index text, ids `generated always`, every timestamp a timestamptz), DB constraints and the append-only trigger, UTC sessions + optimistic lock, login against the DB (real session cookie: flags, holds only ids, forged cookie ignored), demo seeder (IST date after midnight, sample labels, the demo numbers 813/862 -> 812/861 and the cook card)/reset (clock set before re-seeding)/demo API, opt-out purge; Phase 2 over HTTP: slots + dishes setup, meals (create from slot defaults, exactly one veg reserve dish, live forecast, edit only while PLANNED, override needs a reason and P90 >= P50, issue freezes every number, live count), opt-outs (open meals, cutoff and issued 409 `OPTOUT_CLOSED`, undo, duplicate, hostel ID 400, per-IP 429 with `Retry-After`, the same answer whatever another student did), issue vs opt-out race (row locks, `test_issue_optout_race.py`), a planned reserve dish cannot turn non-veg, kitchen scoping 404 (`test_scoping.py`), scheduler steps 1-2 with a fixed and a demo clock | Docker (Testcontainers `postgres:17`) or `TEST_DATABASE_URL` |
 
 ## Project layout
 
 ```
 app/main.py         app assembly: lifespan, middleware, error handlers, routers, static mount (last)
-app/scheduler.py    15-second loop tick (steps added in later phases) + nightly opt-out purge
+app/scheduler.py    15-second loop tick (steps 1-2 now: issue at cutoff, start service) + nightly opt-out purge
 app/core/           config (Settings), db (Base, SessionLocal, get_db), clock, security, errors
 app/models/         the 14 tables (mirror the Alembic migrations; never create tables)
 app/schemas/        Pydantic v2 request/response models (camelCase JSON via ApiModel)
@@ -142,7 +159,8 @@ app/services/       service functions (load data, call rules, commit)
 app/routers/        one router per feature; role + CSRF rules are one line per router
 app/demo/           DemoClock, seeder, demo router (APP_DEMO=true only)
 alembic/versions/   0001 ... 0006, written by hand
-static/             pages, css, js (api.js, ui.js, i18n.js), vendor/chart.umd.min.js (Chart.js 4.5.1)
+static/             pages (login, index, optout, kitchen/plan|cookcard|setup), css (app, print), js (api.js, ui.js,
+                    i18n.js + one file per page), vendor/chart.umd.min.js (Chart.js 4.5.1)
 tests/              unit/, api/ (TestClient, no DB), integration/ (Testcontainers postgres:17)
 docs/               DECISIONS.md, demo-script.md, safeclock-sop.md, api.http
 ```

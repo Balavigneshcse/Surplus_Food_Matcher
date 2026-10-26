@@ -48,6 +48,79 @@ X-CSRF-Token: {{csrf}}
 POST {{base}}/api/admin/demo/reset
 X-CSRF-Token: {{csrf}}
 
+### ---------------- Phase 2: PREDICT + PREVENT (log in as `kitchen` first) ----------------
+
+### Kitchen setup: slots (+ kitchen info and the NGOs that can be a standing partner)
+GET {{base}}/api/kitchen/slots
+
+### Edit a slot (times, cutoff, ratio 0-1, buffer %, share at T-90, partner, pickup offset, rescue)
+PUT {{base}}/api/kitchen/slots/1
+Content-Type: application/json
+X-CSRF-Token: {{csrf}}
+
+{"serviceStart": "12:00", "serviceEnd": "14:00", "optoutCutoffMin": 180, "attendanceRatio": 0.85, "bufferPct": 6.0,
+ "shareArrivedByT90": 0.4, "standingNgoId": 1, "pickupOffsetMin": 15, "rescueEnabled": true}
+
+### Dishes: list / add / edit
+GET {{base}}/api/kitchen/dishes
+
+###
+POST {{base}}/api/kitchen/dishes
+Content-Type: application/json
+X-CSRF-Token: {{csrf}}
+
+{"name": "Curd rice", "nameTa": "தயிர் சாதம்", "isVeg": true, "cookedGPerDiner": 180, "rawGPerDiner": 60, "costPerKgInr": 50}
+
+### Meals of a date (default: today on the server clock)
+GET {{base}}/api/kitchen/meals?date=2026-10-30
+
+### Plan a meal from its slot: exactly one (veg) reserve dish; usualG = the usual cooked grams
+POST {{base}}/api/kitchen/meals
+Content-Type: application/json
+X-CSRF-Token: {{csrf}}
+
+{"slotId": 1, "date": "2026-10-31", "registeredCount": 1000, "extraOptOuts": 0,
+ "dishes": [{"dishId": 1, "isReserve": true, "usualG": 185000}, {"dishId": 2, "usualG": 135000}, {"dishId": 3}]}
+
+### Full meal view: live P50/P90 while PLANNED, cook card, T-90 numbers, serverNow
+GET {{base}}/api/kitchen/meals/1
+
+### Override (PLANNED only): P90 >= P50 and a reason
+POST {{base}}/api/kitchen/meals/1/override
+Content-Type: application/json
+X-CSRF-Token: {{csrf}}
+
+{"p50": 900, "p90": 960, "reason": "Hostel day: guests expected"}
+
+### Issue the cook card: freezes the numbers (the scheduler does it at the cutoff otherwise)
+POST {{base}}/api/kitchen/meals/1/issue-cook-card
+X-CSRF-Token: {{csrf}}
+
+### Door tally (ISSUED / IN_SERVICE): {"count": n} or {"delta": +1 / +10 / -1}
+POST {{base}}/api/kitchen/meals/1/live-count
+Content-Type: application/json
+X-CSRF-Token: {{csrf}}
+
+{"delta": 10}
+
+### Public (no login, CSRF token only): meals still open for opt-out at MESS1
+GET {{base}}/api/public/kitchens/MESS1/open-meals
+
+### Opt out (the hostel ID goes in the body, never in the URL); repeat = harmless, and the answer never
+### says whether this ID had opted out already (privacy)
+POST {{base}}/api/public/opt-outs
+Content-Type: application/json
+X-CSRF-Token: {{csrf}}
+
+{"kitchenCode": "MESS1", "date": "2026-10-30", "slot": "LUNCH", "hostelId": "SAMPLE-STUDENT-1"}
+
+### Undo before the cutoff
+POST {{base}}/api/public/opt-outs/cancel
+Content-Type: application/json
+X-CSRF-Token: {{csrf}}
+
+{"kitchenCode": "MESS1", "date": "2026-10-30", "slot": "LUNCH", "hostelId": "SAMPLE-STUDENT-1"}
+
 ### 5. Log out (issues a new session; get a new CSRF token afterwards)
 POST {{base}}/api/auth/logout
 X-CSRF-Token: {{csrf}}
